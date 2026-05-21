@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import Image from "next/image"
 import { motion, AnimatePresence } from "framer-motion"
 import {
@@ -1239,154 +1239,343 @@ function MonitoringSlide() {
 
 
 // ═══════════════════════════════════════════
-//  SLIDE 13: DEMOSTRACIÓN FUNCIONAL UNIFICADA (FUSIONADA COMPLETAMENTE - 2 COLUMNAS)
+//  SLIDE 13: DEMOSTRACIÓN FUNCIONAL UNIFICADA — VIDEO PLAYER POR FLUJO
 // ═══════════════════════════════════════════
 function UnifiedDemoSlide() {
-  const [selectedReq, setSelectedReq] = useState(0)
-  const [videoExists, setVideoExists] = useState(false)
+  const [selectedVideo, setSelectedVideo] = useState(0)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [isPlaying, setIsPlaying] = useState(true)
+  const [progress, setProgress] = useState(0)
+  const [duration, setDuration] = useState(0)
+  const [currentTime, setCurrentTime] = useState(0)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const fullscreenVideoRef = useRef<HTMLVideoElement>(null)
 
-  const requirements = [
+  const videos = [
     {
       num: "①",
       title: "Registro de Usuario",
       subtitle: "Crear cuenta como dueño de mascota",
-      desc: "El usuario se registra en la plataforma. El sistema le asigna automáticamente el rol adecuado para proteger su acceso a los datos."
+      desc: "El usuario se registra en la plataforma. El sistema le asigna automáticamente el rol de dueño de mascota.",
+      file: "/videos/registro de usuario.mp4",
+      color: "from-blue-500/20 to-blue-600/10",
+      dot: "bg-blue-500"
     },
     {
       num: "②",
-      title: "Agendar Cita",
-      subtitle: "Seleccionar horario disponible",
-      desc: "El dueño selecciona una fecha y el sistema verifica en tiempo real. Si dos usuarios eligen el mismo horario, el segundo recibe un mensaje de conflicto."
+      title: "Registro de Mascota",
+      subtitle: "Vincular mascota al perfil del dueño",
+      desc: "El dueño registra a su mascota con especie, raza y datos médicos básicos. El sistema la asocia a su cuenta.",
+      file: "/videos/registro de mascota .mp4",
+      color: "from-emerald-500/20 to-emerald-600/10",
+      dot: "bg-emerald-500"
     },
     {
       num: "③",
-      title: "Pagar Cita",
-      subtitle: "Procesamiento seguro con Bold",
-      desc: "El usuario realiza el pago. Al confirmarse, el sistema marca la factura como pagada y confirma la cita automáticamente."
+      title: "Agendamiento de Cita",
+      subtitle: "Seleccionar horario disponible",
+      desc: "El dueño selecciona una fecha y el sistema verifica disponibilidad en tiempo real. Si hay conflicto, se notifica al usuario.",
+      file: "/videos/Agendamiento de cita .mp4",
+      color: "from-purple-500/20 to-purple-600/10",
+      dot: "bg-purple-500"
     },
     {
       num: "④",
-      title: "Registrar Historial",
-      subtitle: "Veterinario completa el expediente",
-      desc: "Durante la consulta, el veterinario registra diagnósticos y vacunas. El sistema guarda la información y genera un PDF del expediente."
+      title: "Pago de Cita",
+      subtitle: "Procesamiento seguro con Bold",
+      desc: "El usuario realiza el pago. Al confirmarse, el sistema marca la factura como pagada y confirma la cita automáticamente.",
+      file: "/videos/Pago de cita .mp4",
+      color: "from-amber-500/20 to-amber-600/10",
+      dot: "bg-amber-500"
     },
     {
       num: "⑤",
-      title: "Telemedicina",
-      subtitle: "Videollamada integrada",
-      desc: "El sistema genera salas virtuales temporales y seguras para que el veterinario y el dueño se conecten directamente."
+      title: "Historial Médico",
+      subtitle: "Descargar expediente del paciente",
+      desc: "El veterinario o dueño puede descargar el historial clínico completo de la mascota en formato PDF.",
+      file: "/videos/Descargar historial medico .mp4",
+      color: "from-rose-500/20 to-rose-600/10",
+      dot: "bg-rose-500"
     },
-
   ]
 
-  const handleVideoError = () => {
-    setVideoExists(false)
+  // Reset video when switching
+  useEffect(() => {
+    setProgress(0)
+    setCurrentTime(0)
+    setDuration(0)
+    setIsPlaying(true)
+    if (videoRef.current) {
+      videoRef.current.load()
+      videoRef.current.play().catch(() => {})
+    }
+  }, [selectedVideo])
+
+  // Sync fullscreen video time with main video
+  useEffect(() => {
+    if (isFullscreen && fullscreenVideoRef.current && videoRef.current) {
+      fullscreenVideoRef.current.currentTime = videoRef.current.currentTime
+      fullscreenVideoRef.current.play().catch(() => {})
+    }
+  }, [isFullscreen])
+
+  const handleTimeUpdate = () => {
+    const v = videoRef.current
+    if (!v) return
+    setCurrentTime(v.currentTime)
+    setProgress(v.duration ? (v.currentTime / v.duration) * 100 : 0)
   }
 
-  const handleVideoLoad = () => {
-    setVideoExists(true)
+  const handleLoadedMetadata = () => {
+    if (videoRef.current) setDuration(videoRef.current.duration)
   }
+
+  const handleScrub = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = parseFloat(e.target.value)
+    if (videoRef.current && duration) {
+      videoRef.current.currentTime = (val / 100) * duration
+    }
+    setProgress(val)
+  }
+
+  const handleFullscreenScrub = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = parseFloat(e.target.value)
+    if (fullscreenVideoRef.current && duration) {
+      fullscreenVideoRef.current.currentTime = (val / 100) * duration
+    }
+    if (videoRef.current && duration) {
+      videoRef.current.currentTime = (val / 100) * duration
+    }
+    setProgress(val)
+  }
+
+  const togglePlay = () => {
+    const v = videoRef.current
+    if (!v) return
+    if (v.paused) { v.play(); setIsPlaying(true) }
+    else { v.pause(); setIsPlaying(false) }
+  }
+
+  const formatTime = (s: number) => {
+    const m = Math.floor(s / 60)
+    const sec = Math.floor(s % 60)
+    return `${m}:${sec.toString().padStart(2, "0")}`
+  }
+
+  const current = videos[selectedVideo]
 
   return (
     <div className="h-screen flex flex-col bg-white">
-      <SlideHeader title="Demostración Funcional del Sistema" subtitle="Momento 5 de 5" slideNumber={12} />
+      {/* Fullscreen modal */}
+      <AnimatePresence>
+        {isFullscreen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] bg-black flex flex-col items-center justify-center"
+          >
+            {/* Close */}
+            <button
+              onClick={() => setIsFullscreen(false)}
+              className="absolute top-5 right-6 text-white bg-white/10 hover:bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-bold z-10 transition-colors"
+            >
+              ✕ Cerrar
+            </button>
 
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8 px-10 py-6 overflow-hidden">
-
-        {/* Left Column (40%) - The 6 steps */}
-        <div className="lg:col-span-5 flex flex-col justify-center space-y-2">
-          <h3 className="text-sm font-extrabold text-[#1e3a5f] border-b pb-1.5 flex items-center gap-2">
-            <Terminal className="w-4 h-4 text-[#2d9596]" /> Flujos de la Rúbrica de Sustentación
-          </h3>
-
-          <div className="space-y-1.5 max-h-[70vh] overflow-y-auto pr-1">
-            {requirements.map((req, index) => (
-              <button
-                key={req.title}
-                onClick={() => setSelectedReq(index)}
-                className={`w-full text-left p-2 px-3 rounded-xl transition-all border flex gap-2.5 items-start ${selectedReq === index
-                  ? "bg-[#2d9596]/10 border-[#2d9596] shadow-sm translate-x-1"
-                  : "bg-gray-50 border-gray-100 hover:bg-gray-100/70"
-                  }`}
-              >
-                <span className={`text-sm font-bold shrink-0 mt-0.5 ${selectedReq === index ? "text-[#2d9596]" : "text-gray-400"
-                  }`}>
-                  {req.num}
-                </span>
-
-                <div className="space-y-0.5 min-w-0">
-                  <div className="flex flex-col">
-                    <span className="text-[9px] font-black text-[#1e3a5f] tracking-wider uppercase">
-                      {req.title}
-                    </span>
-                    <span className={`text-[11px] font-bold leading-tight truncate ${selectedReq === index ? "text-[#2d9596]" : "text-gray-500"}`}>
-                      {req.subtitle}
-                    </span>
-                  </div>
-
-                  {selectedReq === index && (
-                    <motion.p
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      className="text-[9.5px] text-gray-500 leading-normal font-medium mt-1"
-                    >
-                      {req.desc}
-                    </motion.p>
-                  )}
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Right Column (60%) - Styled Video Player or Placeholder */}
-        <div className="lg:col-span-7 flex flex-col justify-center">
-          <div className="w-full h-[400px] bg-slate-900 border border-slate-800 rounded-3xl p-2.5 shadow-xl flex items-center justify-center relative overflow-hidden group">
-
-            {/* Top browser bar mockup */}
-            <div className="absolute top-0 left-0 right-0 h-8 bg-slate-950/50 flex items-center px-4 gap-1.5 border-b border-slate-800/80 z-20">
-              <span className="w-2.5 h-2.5 rounded-full bg-red-400/80" />
-              <span className="w-2.5 h-2.5 rounded-full bg-yellow-400/80" />
-              <span className="w-2.5 h-2.5 rounded-full bg-green-400/80" />
-              <span className="text-[10px] text-slate-400 font-mono ml-4 select-all">https://petwell-green.vercel.app/demo</span>
+            {/* Video title */}
+            <div className="absolute top-5 left-6 flex items-center gap-3">
+              <span className={`w-2.5 h-2.5 rounded-full ${current.dot}`} />
+              <span className="text-white font-bold text-sm">{current.num} {current.title}</span>
             </div>
 
-            {/* Video element */}
+            {/* Video */}
             <video
-              src="/demo.mp4"
+              ref={fullscreenVideoRef}
+              src={current.file}
               autoPlay
               loop
               muted
               playsInline
-              onError={handleVideoError}
-              onLoadedData={handleVideoLoad}
-              className={`w-full h-full object-cover rounded-2xl pt-6 transition-opacity duration-500 ${videoExists ? "opacity-100 z-10" : "opacity-0 -z-10 absolute"
-                }`}
+              onTimeUpdate={() => {
+                const v = fullscreenVideoRef.current
+                if (!v) return
+                setCurrentTime(v.currentTime)
+                setProgress(v.duration ? (v.currentTime / v.duration) * 100 : 0)
+              }}
+              className="max-w-full max-h-[80vh] rounded-xl object-contain"
             />
 
-            {/* Elegant Placeholder if video is not loaded */}
-            {!videoExists && (
-              <div className="flex flex-col items-center justify-center text-center p-6 pt-12 z-10">
-                <div className="w-16 h-16 bg-[#2d9596]/10 rounded-full flex items-center justify-center text-[#2d9596] mb-5 border border-[#2d9596]/25 animate-pulse">
-                  <Play className="w-8 h-8 fill-current ml-1" />
+            {/* Fullscreen controls */}
+            <div className="absolute bottom-8 left-0 right-0 px-12 flex flex-col gap-2">
+              <input
+                type="range" min="0" max="100" step="0.1"
+                value={progress}
+                onChange={handleFullscreenScrub}
+                className="w-full h-1 accent-[#2d9596] cursor-pointer"
+              />
+              <div className="flex justify-between text-[11px] text-slate-400 font-mono">
+                <span>{formatTime(currentTime)}</span>
+                <span>{formatTime(duration)}</span>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <SlideHeader title="Demostración Funcional del Sistema" subtitle="Momento 5 de 5" slideNumber={12} />
+
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 px-8 py-4 overflow-hidden">
+
+        {/* Left Column — Flow steps */}
+        <div className="lg:col-span-4 flex flex-col justify-center space-y-1.5">
+          <h3 className="text-[11px] font-black text-[#1e3a5f] border-b pb-1.5 flex items-center gap-2 uppercase tracking-widest mb-2">
+            <Terminal className="w-3.5 h-3.5 text-[#2d9596]" /> Flujo Funcional
+          </h3>
+
+          {videos.map((v, index) => (
+            <button
+              key={v.title}
+              onClick={() => setSelectedVideo(index)}
+              className={`w-full text-left p-2.5 px-3.5 rounded-xl transition-all border flex gap-3 items-center ${
+                selectedVideo === index
+                  ? "bg-[#2d9596]/10 border-[#2d9596] shadow-sm"
+                  : "bg-gray-50 border-gray-100 hover:bg-gray-100/70"
+              }`}
+            >
+              <span className={`w-2 h-2 rounded-full shrink-0 ${v.dot} ${
+                selectedVideo === index ? "scale-125 shadow-sm" : "opacity-40"
+              }`} />
+              <div className="min-w-0">
+                <span className={`text-[9px] font-black uppercase tracking-wider block ${
+                  selectedVideo === index ? "text-[#2d9596]" : "text-gray-400"
+                }`}>
+                  {v.num} {v.title}
+                </span>
+                <span className={`text-[10px] font-semibold leading-tight block truncate ${
+                  selectedVideo === index ? "text-[#1e3a5f]" : "text-gray-400"
+                }`}>
+                  {v.subtitle}
+                </span>
+              </div>
+              {selectedVideo === index && (
+                <span className="ml-auto shrink-0">
+                  <Play className="w-3 h-3 text-[#2d9596] fill-current" />
+                </span>
+              )}
+            </button>
+          ))}
+
+          {/* Description of current video */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={selectedVideo}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.25 }}
+              className="mt-1 p-3 bg-gray-50 border border-gray-100 rounded-xl"
+            >
+              <p className="text-[10px] text-gray-500 leading-relaxed font-medium">
+                {current.desc}
+              </p>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        {/* Right Column — Video Player */}
+        <div className="lg:col-span-8 flex flex-col justify-center">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={selectedVideo}
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.3 }}
+              className="w-full flex flex-col"
+            >
+              {/* Dark player shell */}
+              <div className="w-full bg-slate-950 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+
+                {/* Fake browser bar */}
+                <div className="flex items-center px-4 py-2 gap-1.5 bg-slate-900 border-b border-slate-800">
+                  <span className="w-2.5 h-2.5 rounded-full bg-red-400/80" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-yellow-400/80" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-green-400/80" />
+                  <span className={`ml-3 w-1.5 h-1.5 rounded-full ${current.dot}`} />
+                  <span className="text-[10px] text-slate-400 font-mono ml-1 truncate">
+                    petwell-green.vercel.app — {current.title}
+                  </span>
+                  {/* Expand button */}
+                  <button
+                    onClick={() => setIsFullscreen(true)}
+                    className="ml-auto flex items-center gap-1 text-[9px] font-bold text-white bg-white/10 hover:bg-white/20 px-2 py-0.5 rounded transition-colors border border-white/10"
+                  >
+                    <Eye className="w-3 h-3" /> Ampliar
+                  </button>
                 </div>
 
-                <h4 className="text-white font-extrabold text-lg mb-2">
-                  🎥 ARRASTRA AQUÍ TU VIDEO DE DEMO
-                </h4>
+                {/* Video */}
+                <div className="relative bg-black" style={{ aspectRatio: "16/9" }}>
+                  <video
+                    ref={videoRef}
+                    src={current.file}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    onTimeUpdate={handleTimeUpdate}
+                    onLoadedMetadata={handleLoadedMetadata}
+                    onClick={togglePlay}
+                    className="w-full h-full object-contain cursor-pointer"
+                  />
+                  {/* Play/Pause overlay */}
+                  {!isPlaying && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                      <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                        <Play className="w-7 h-7 text-white fill-current ml-1" />
+                      </div>
+                    </div>
+                  )}
+                </div>
 
-                <p className="text-slate-400 text-xs font-medium max-w-sm leading-relaxed mb-4">
-                  Coloca tu archivo <code className="text-[#2d9596] font-mono">demo.mp4</code> dentro de la carpeta <code className="text-[#2d9596] font-mono">/public</code> del proyecto de la presentación para reproducirlo aquí automáticamente en bucle.
-                </p>
-
-                {/* Dynamic visual badge depending on active step to show interactivity */}
-                <div className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-2xl text-[10px] font-mono text-slate-300">
-                  <span className="text-[#2d9596] font-bold">Simulando:</span> {requirements[selectedReq]?.title || "Seleccione una opción"} — {requirements[selectedReq]?.subtitle || ""}
+                {/* Controls bar */}
+                <div className="px-4 py-2.5 bg-slate-900 flex flex-col gap-1.5">
+                  {/* Timeline scrubber */}
+                  <input
+                    type="range" min="0" max="100" step="0.1"
+                    value={progress}
+                    onChange={handleScrub}
+                    className="w-full h-1 accent-[#2d9596] cursor-pointer"
+                    style={{ accentColor: "#2d9596" }}
+                  />
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={togglePlay}
+                        className="w-6 h-6 rounded-full bg-[#2d9596] hover:bg-[#257d7e] flex items-center justify-center transition-colors"
+                      >
+                        {isPlaying
+                          ? <span className="w-2 h-2 flex gap-0.5">
+                              <span className="w-0.5 h-2 bg-white rounded-sm" />
+                              <span className="w-0.5 h-2 bg-white rounded-sm" />
+                            </span>
+                          : <Play className="w-3 h-3 text-white fill-current ml-0.5" />
+                        }
+                      </button>
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        {formatTime(currentTime)} / {formatTime(duration)}
+                      </span>
+                    </div>
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
+                      <span className={`w-1.5 h-1.5 rounded-full ${current.dot}`} />
+                      {current.num} {current.title}
+                    </span>
+                  </div>
                 </div>
               </div>
-            )}
-
-          </div>
+            </motion.div>
+          </AnimatePresence>
         </div>
 
       </div>
