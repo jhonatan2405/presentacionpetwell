@@ -106,7 +106,7 @@ function HeroSlide() {
           Sustentación Final · Arquitectura de Software
         </motion.p>
 
-        {/* Members cards - Original Clean Light Design with Usernames */}
+        {/* Members cards - Rich hover with border reveal + glow */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl mb-10">
           {members.map((member, i) => (
             <motion.div
@@ -114,8 +114,8 @@ function HeroSlide() {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 + i * 0.1, duration: 0.5 }}
-              whileHover={{ y: -6, boxShadow: "0 10px 25px rgba(45, 149, 150, 0.12)" }}
-              className="bg-white border border-gray-100 p-5 rounded-2xl shadow-md flex flex-col items-center text-center transition-all"
+              whileHover={{ y: -8, scale: 1.03, boxShadow: "0 16px 40px rgba(45, 149, 150, 0.20)" }}
+              className="bg-white border border-gray-100 hover:border-[#2d9596]/50 p-5 rounded-2xl shadow-md flex flex-col items-center text-center transition-all duration-200 cursor-pointer"
             >
               {/* Circular Avatar with original teal/blue gradient */}
               <div className="w-12 h-12 bg-gradient-to-br from-[#2d9596] to-[#1e3a5f] rounded-full flex items-center justify-center text-base font-bold text-white mb-3 shadow-sm">
@@ -148,12 +148,13 @@ function HeroSlide() {
         >
           <div className="flex flex-wrap justify-center gap-1.5 max-w-3xl mb-8">
             {techs.map((tech) => (
-              <span
+              <motion.span
                 key={tech}
-                className="px-2.5 py-1 bg-white border border-gray-100 text-[10px] font-bold text-gray-500 rounded-full shadow-sm"
+                whileHover={{ scale: 1.12, backgroundColor: "#e8f4f4", borderColor: "#2d9596", color: "#2d9596" }}
+                className="px-2.5 py-1 bg-white border border-gray-100 text-[10px] font-bold text-gray-500 rounded-full shadow-sm cursor-default transition-colors"
               >
                 {tech}
-              </span>
+              </motion.span>
             ))}
           </div>
 
@@ -1868,12 +1869,27 @@ export default function PetWellPresentation() {
           initial="enter"
           animate="center"
           exit="exit"
-          transition={{ type: "spring", stiffness: 350, damping: 35 }}
+          transition={{ type: "spring", stiffness: 500, damping: 42 }}
           className="absolute inset-0"
         >
           {slides[currentSlide]}
         </motion.div>
       </AnimatePresence>
+
+      {/* Home button - visible from slide 2 onwards */}
+      {currentSlide > 0 && (
+        <motion.button
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -20 }}
+          transition={{ duration: 0.25 }}
+          onClick={() => goToSlide(0)}
+          className="fixed bottom-5 left-5 z-50 flex items-center gap-2 px-3.5 py-2 bg-white border border-gray-200 hover:border-[#2d9596] hover:bg-[#f0f7f7] text-[#1e3a5f] rounded-full shadow-md text-[11px] font-bold transition-all hover:scale-105"
+        >
+          <span className="text-base leading-none">🐾</span>
+          <span>Inicio</span>
+        </motion.button>
+      )}
 
       {/* Navigation dots - Hidden on Slide 1 */}
       {currentSlide > 0 && (
